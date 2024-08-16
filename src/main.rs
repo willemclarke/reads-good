@@ -62,17 +62,16 @@ fn get_book_html(url: &str) -> Result<Html, Error> {
 }
 
 fn get_book_urls_from_list(html: Html) -> Vec<String> {
-    let mut urls: Vec<String> = Vec::new();
     let title_selector = Selector::parse("a.bookTitle").unwrap();
 
-    for element in html.select(&title_selector) {
-        if let Some(href) = element.value().attr("href") {
-            let url = format!("{}{}", GOODREADS_BASE_URL, href);
-            urls.push(url);
-        }
-    }
-
-    urls
+    let book_urls = html
+        .select(&title_selector)
+        .map(|element| {
+            let href = element.value().attr("href").unwrap().to_string();
+            format!("{}{}", GOODREADS_BASE_URL, href)
+        })
+        .collect::<Vec<String>>();
+    book_urls
 }
 
 fn string_selector(html: &Html, selector: Selector) -> String {
