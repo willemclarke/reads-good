@@ -7,6 +7,7 @@ const GOODREADS_BASE_URL: &str = "https://www.goodreads.com";
 
 #[derive(Debug)]
 pub enum Error {
+    UnableToReadListopiaUrl,
     UnableToRetrieveListopia,
     UnableToRetrieveBook(String),
 }
@@ -26,13 +27,13 @@ pub struct Book {
     pub genres: Vec<String>,
 }
 
-pub async fn scrape(client: &reqwest::Client, url: String) -> Result<Vec<Book>, Error> {
+pub async fn scan(client: &reqwest::Client, url: String) -> Result<Vec<Book>, Error> {
     let listopia_html = get_list_html(client, url).await;
 
     match listopia_html {
         Ok(html) => {
-            let book_urls = get_book_urls_from_list(html).to_vec();
-            println!("parsing following urls: {:#?}", book_urls);
+            let book_urls = get_book_urls_from_list(html);
+            println!("parsing following books: {:#?}", book_urls);
 
             let retrieve_books_html_futures =
                 book_urls.into_iter().map(|url| get_book_html(client, url));
@@ -48,7 +49,6 @@ pub async fn scrape(client: &reqwest::Client, url: String) -> Result<Vec<Book>, 
 
             parsed_books
         }
-
         Err(err) => Err(err),
     }
 }
