@@ -29,4 +29,4 @@ To run:
 - Note: the csv file will be outputted within the directory of `reads-good/targer/release/`
 
 csv example:
-![image](https://github.com/user-attachments/assets/4115b2b5-200a-458f-91b5-20f313408233)
+![image](https://github.com/user-attachments/assets/faae5e90-35e1-48da-8195-9b6b27cda36d)
