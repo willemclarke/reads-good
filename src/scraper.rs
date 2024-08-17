@@ -1,3 +1,4 @@
+use futures::future;
 use reqwest;
 use scraper;
 use scraper::{Html, Selector};
@@ -25,25 +26,25 @@ pub struct Book {
     pub genres: Vec<String>,
 }
 
-pub fn scrape(url: String) -> Result<Vec<Book>, Error> {
-    let listopia_html = get_list_html(&url);
+pub async fn scrape(client: &reqwest::Client, url: String) -> Result<Vec<Book>, Error> {
+    let listopia_html = get_list_html(client, url).await;
 
     match listopia_html {
         Ok(html) => {
-            let book_urls = get_book_urls_from_list(html)[0..10].to_vec();
+            let book_urls = get_book_urls_from_list(html).to_vec();
             println!("parsing following urls: {:#?}", book_urls);
 
-            let books: Result<Vec<Html>, Error> = book_urls
-                .into_iter()
-                .map(|url| get_book_html(&url))
-                .collect();
+            let retrieve_books_html_futures =
+                book_urls.into_iter().map(|url| get_book_html(client, url));
 
-            let parsed_books: Result<Vec<Book>, Error> = books.map(|vec_book| {
-                vec_book
+            let each_books_html: Result<Vec<Html>, Error> =
+                future::join_all(retrieve_books_html_futures)
+                    .await
                     .into_iter()
-                    .map(|book_html| parse_book(&book_html))
-                    .collect()
-            });
+                    .collect();
+
+            let parsed_books: Result<Vec<Book>, Error> = each_books_html
+                .map(|book_html_vec| book_html_vec.iter().map(|html| parse_book(&html)).collect());
 
             parsed_books
         }
@@ -52,22 +53,25 @@ pub fn scrape(url: String) -> Result<Vec<Book>, Error> {
     }
 }
 
-fn get_html_from_url(url: &str) -> Result<Html, reqwest::Error> {
-    let response = reqwest::blocking::get(url);
+async fn get_html_from_url(client: &reqwest::Client, url: &str) -> Result<Html, reqwest::Error> {
+    let response = client.get(url).send().await?;
 
-    response.map(|res| {
-        let html_as_string = res.text().unwrap_or(String::from(""));
-        let document = Html::parse_document(&html_as_string);
-        return document;
-    })
+    let html_as_string = response.text().await.unwrap_or_else(|_| String::from(""));
+    let document = Html::parse_document(&html_as_string);
+
+    Ok(document)
 }
 
-pub fn get_list_html(url: &str) -> Result<Html, Error> {
-    get_html_from_url(url).map_err(|_| Error::UnableToRetrieveListopia)
+pub async fn get_list_html(client: &reqwest::Client, url: String) -> Result<Html, Error> {
+    get_html_from_url(client, &url)
+        .await
+        .map_err(|_| Error::UnableToRetrieveListopia)
 }
 
-pub fn get_book_html(url: &str) -> Result<Html, Error> {
-    get_html_from_url(url).map_err(|_| Error::UnableToRetrieveBook(String::from(url)))
+pub async fn get_book_html(client: &reqwest::Client, url: String) -> Result<Html, Error> {
+    get_html_from_url(client, &url)
+        .await
+        .map_err(|_| Error::UnableToRetrieveBook(String::from(url)))
 }
 
 pub fn get_book_urls_from_list(html: Html) -> Vec<String> {

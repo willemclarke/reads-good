@@ -1,15 +1,23 @@
 mod scraper;
 use csv;
 use inquire;
+use reqwest;
+use tokio;
 
 // "https://www.goodreads.com/list/show/3810.Best_Cozy_Mystery_Series"
-fn main() -> Result<(), scraper::Error> {
+#[tokio::main]
+async fn main() -> Result<(), scraper::Error> {
+    // init reqwest client to make requests to goodreads
+    let client = reqwest::Client::new();
+
     let listopia_url =
         inquire::Text::new("Provide the listopia url you would like to scrape").prompt();
 
     match listopia_url {
         Ok(url) => {
-            _ = scraper::scrape(String::from(url)).and_then(|books| Ok(to_csv(books)));
+            _ = scraper::scrape(&client, String::from(url))
+                .await
+                .and_then(|books| Ok(to_csv(books)));
             Ok(())
         }
         Err(err) => {
@@ -27,10 +35,10 @@ fn to_csv(books: Vec<scraper::Book>) {
         .write_record(&[
             "title",
             "author",
-            "rating",
             "original_publish_date",
-            "number_of_pages",
+            "rating",
             "number_of_ratings",
+            "number_of_pages",
             "number_of_reviews",
             "genres",
         ])
@@ -39,10 +47,10 @@ fn to_csv(books: Vec<scraper::Book>) {
     for book in books {
         let title = book.title.unwrap();
         let author = book.author.unwrap();
-        let rating = book.rating.unwrap();
         let original_publish_date = book.original_publish_date.unwrap();
-        let number_of_pages = book.number_of_pages.unwrap();
+        let rating = book.rating.unwrap();
         let number_of_ratings = book.number_of_ratings.unwrap();
+        let number_of_pages = book.number_of_pages.unwrap();
         let number_of_reviews = book.number_of_reviews.unwrap();
         let genres = book.genres.join(", ");
 
@@ -51,10 +59,10 @@ fn to_csv(books: Vec<scraper::Book>) {
             .write_record(&[
                 title,
                 author,
-                rating,
                 original_publish_date,
-                number_of_pages,
+                rating,
                 number_of_ratings,
+                number_of_pages,
                 number_of_reviews,
                 genres,
             ])

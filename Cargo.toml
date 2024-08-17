@@ -5,6 +5,9 @@ edition = "2021"
 
 [dependencies]
 csv = "1.3.0"
+futures = "0.3.30"
 inquire = "0.7.5"
-reqwest = { version = "0.12.5", features = ["blocking"] }
+rayon = "1.10.0"
+reqwest = "0.12.5"
 scraper = "0.20.0"
+tokio = { version = "1.39.2", features = ["full"] }
