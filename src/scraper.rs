@@ -12,17 +12,17 @@ pub enum Error {
 
 #[derive(Debug)]
 pub struct Book {
-    title: Option<String>,
-    author: Option<String>,
-    rating: Option<String>,
-    original_publish_date: Option<String>,
-    isbn: Option<String>,
-    asin: Option<String>,
-    edition_publish_date: Option<String>,
-    number_of_pages: Option<String>,
-    number_of_ratings: Option<String>,
-    number_of_reviews: Option<String>,
-    genres: Vec<String>,
+    pub title: Option<String>,
+    pub author: Option<String>,
+    pub rating: Option<String>,
+    pub original_publish_date: Option<String>,
+    pub isbn: Option<String>,
+    pub asin: Option<String>,
+    pub edition_publish_date: Option<String>,
+    pub number_of_pages: Option<String>,
+    pub number_of_ratings: Option<String>,
+    pub number_of_reviews: Option<String>,
+    pub genres: Vec<String>,
 }
 
 pub fn scrape(url: String) -> Result<Vec<Book>, Error> {
@@ -30,7 +30,7 @@ pub fn scrape(url: String) -> Result<Vec<Book>, Error> {
 
     match listopia_html {
         Ok(html) => {
-            let book_urls = get_book_urls_from_list(html)[0..4].to_vec();
+            let book_urls = get_book_urls_from_list(html)[0..10].to_vec();
             println!("parsing following urls: {:#?}", book_urls);
 
             let books: Result<Vec<Html>, Error> = book_urls
