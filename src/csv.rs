@@ -1,7 +1,7 @@
-use crate::scanner;
+use crate::scraper;
 use csv;
 
-pub fn create(books: Vec<scanner::Book>, file_name: String) {
+pub fn create(books: Vec<scraper::Book>, file_name: String) {
     let path = std::path::Path::new(&file_name);
     let mut writer = csv::Writer::from_path(path).unwrap();
 

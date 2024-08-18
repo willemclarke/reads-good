@@ -18,16 +18,13 @@ pub struct Book {
     pub author: Option<String>,
     pub rating: Option<String>,
     pub original_publish_date: Option<String>,
-    pub isbn: Option<String>,
-    pub asin: Option<String>,
-    pub edition_publish_date: Option<String>,
     pub number_of_pages: Option<String>,
     pub number_of_ratings: Option<String>,
     pub number_of_reviews: Option<String>,
     pub genres: Vec<String>,
 }
 
-pub async fn scan(client: &reqwest::Client, url: String) -> Result<Vec<Book>, Error> {
+pub async fn scrape(client: &reqwest::Client, url: String) -> Result<Vec<Book>, Error> {
     let listopia_html = get_list_html(client, url).await;
 
     match listopia_html {
@@ -155,9 +152,6 @@ fn parse_book(book_html: &Html) -> Book {
         author,
         rating,
         number_of_pages,
-        isbn: None,
-        asin: None,
-        edition_publish_date: None,
         original_publish_date,
         number_of_ratings,
         number_of_reviews,

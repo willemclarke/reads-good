@@ -1,5 +1,5 @@
 mod csv;
-mod scanner;
+mod scraper;
 use inquire::validator::Validation;
 use reqwest;
 use std;
@@ -7,7 +7,7 @@ use tokio;
 
 #[derive(Debug)]
 enum ReadsGoodError {
-    Scanner(scanner::Error),
+    Scraper(scraper::Error),
     Inquire(inquire::InquireError),
 }
 
@@ -17,18 +17,18 @@ async fn main() -> Result<(), ReadsGoodError> {
     let client = reqwest::Client::new();
 
     // user prompts
-    let listopia_url = inquire::Text::new("Provide the listopia url you would like to export")
+    let listopia_url = inquire::Text::new("Provide the listopia url you would like to export:")
         .with_validator(validate_listopia_url)
         .prompt();
 
-    let file_name = inquire::Text::new("Provide the name of your csv file: e.g. `books.csv`")
+    let file_name = inquire::Text::new("Provide the name of your csv file: e.g. `books.csv`:")
         .with_validator(validate_filename)
         .prompt();
 
     match listopia_url {
         Ok(url) => match file_name {
             Ok(name) => {
-                _ = scanner::scan(&client, url)
+                _ = scraper::scrape(&client, url)
                     .await
                     .and_then(|books| Ok(csv::create(books, name)));
                 Ok(())
@@ -54,7 +54,7 @@ fn validate_listopia_url(
         Ok(Validation::Invalid(
             "Must provide a goodreads listpopia url".into(),
         ))
-    } else if !url.starts_with("https://") {
+    } else if !url.starts_with("https://www.goodreads.com/list/show") {
         Ok(Validation::Invalid(
             "Ensure goodreads listopia url is valid".into(),
         ))

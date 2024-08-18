@@ -3,15 +3,12 @@ and exports the details of each book into a csv file.
 
 It writes the following properties to the csv file:
 
-```
+```rust
 pub struct Book {
     pub title: Option<String>,
     pub author: Option<String>,
     pub rating: Option<String>,
     pub original_publish_date: Option<String>,
-    pub isbn: Option<String>,
-    pub asin: Option<String>,
-    pub edition_publish_date: Option<String>,
     pub number_of_pages: Option<String>,
     pub number_of_ratings: Option<String>,
     pub number_of_reviews: Option<String>,
@@ -25,8 +22,8 @@ Todo:
 To run:
 - `git clone`
 - `cargo build --release`
-- `cd` into `reads-good/targer/release/` and run `./reads-good` or double click executable
-- Note: the csv file will be outputted within the directory of `reads-good/targer/release/`
+- `cd` into `reads-good/target/release/` and run `./reads-good` or double click executable
+- Note: the csv file will be outputted within the directory of `reads-good/target/release/`
 
 csv example:
 ![image](https://github.com/user-attachments/assets/faae5e90-35e1-48da-8195-9b6b27cda36d)
