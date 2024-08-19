@@ -1,6 +1,6 @@
 mod csv;
 mod scraper;
-use inquire::validator::Validation;
+use inquire::{validator::Validation, InquireError};
 use reqwest;
 use std;
 use tokio;
@@ -8,7 +8,7 @@ use tokio;
 #[derive(Debug)]
 enum ReadsGoodError {
     Scraper(scraper::Error),
-    Inquire(inquire::InquireError),
+    Inquire(InquireError),
 }
 
 #[tokio::main]
@@ -18,6 +18,7 @@ async fn main() -> Result<(), ReadsGoodError> {
 
     // user prompts
     let listopia_url = inquire::Text::new("Provide the listopia url you would like to export:")
+        .with_help_message("Please ensure the url you provide begins on the first page")
         .with_validator(validate_listopia_url)
         .prompt();
 
@@ -25,17 +26,26 @@ async fn main() -> Result<(), ReadsGoodError> {
         .with_validator(validate_filename)
         .prompt();
 
-    match listopia_url {
-        Ok(url) => match file_name {
-            Ok(name) => {
-                _ = scraper::scrape(&client, url)
-                    .await
-                    .and_then(|books| Ok(csv::create(books, name)));
-                Ok(())
-            }
+    let page_count =
+        inquire::prompt_u32("How many pages would you like to export? (Number between 1 - 10): ");
 
+    match listopia_url {
+        Ok(url) => match page_count {
+            Ok(count) => match file_name {
+                Ok(name) => {
+                    _ = scraper::scrape(&client, url, count)
+                        .await
+                        .and_then(|books| Ok(csv::create(books, name)));
+                    Ok(())
+                }
+
+                Err(err) => {
+                    println!("Please provide a valid number between 1 - 10");
+                    Err(ReadsGoodError::Inquire(err))
+                }
+            },
             Err(err) => {
-                println!("Error parsing provided filename");
+                println!("Error parsing provided listopia url");
                 Err(ReadsGoodError::Inquire(err))
             }
         },
@@ -53,6 +63,10 @@ fn validate_listopia_url(
     if url.is_empty() {
         Ok(Validation::Invalid(
             "Must provide a goodreads listpopia url".into(),
+        ))
+    } else if url.contains("?page=") {
+        Ok(Validation::Invalid(
+            "Ensure goodreads listopia url starts from first page, there should be no `?page=X` query param".into(),
         ))
     } else if !url.starts_with("https://www.goodreads.com/list/show") {
         Ok(Validation::Invalid(

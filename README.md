@@ -1,7 +1,9 @@
-CLI tool which takes a goodreads listopia public list (e.g. https://www.goodreads.com/list/show/264.Books_That_Everyone_Should_Read_At_Least_Once)
-and exports the details of each book into a csv file.
+### reads-good
 
-It writes the following properties to the csv file:
+A CLI tool which takes a goodreads listopia public list url:
+(e.g. goodreads.com/list/show/264.Books_That_Everyone_Should_Read_At_Least_Once)
+and exports the *below* properties of each book into a csv file.
+
 
 ```rust
 pub struct Book {
@@ -16,8 +18,16 @@ pub struct Book {
 }
 ```
 
-Todo:
-- Pagination, prompt user for number of pages they want to export
+Behaviour:
+- Input the url to the listopia list
+- Input a desired filename, e.g. `books.csv`
+- Input desired number of pages you would like to export (number between 1 - 10)
+
+Some books for whatever reason may fail to parse some of the selectors (e.g. title/author/page_count), in this case, these books will be ignored from the CSV generation.
+As such, if you asked for `3` pages, and see 298 rows in your csv file, thats the reason why.
+
+Sometimes when I run the CLI, it will get to a given page and then silently fail with no warnings, I don't really know why. If that happens,
+usually restarting is enough to get it working. If you can tell why, feel free to submit a PR.
 
 To run:
 - `git clone`
