@@ -18,10 +18,12 @@ pub struct Book {
 }
 ```
 
-Behaviour:
+#### Behaviour:
 - Input the url to the listopia list
 - Input a desired filename, e.g. `books.csv`
 - Input desired number of pages you would like to export (number between 1 - 10)
+
+![image](https://github.com/user-attachments/assets/048c2faf-e134-431a-8f36-583a53381d47)
 
 Some books for whatever reason may fail to parse some of the selectors (e.g. title/author/page_count), in this case, these books will be ignored from the CSV generation.
 As such, if you asked for `3` pages, and see 298 rows in your csv file, thats the reason why.
@@ -29,7 +31,7 @@ As such, if you asked for `3` pages, and see 298 rows in your csv file, thats th
 Sometimes when I run the CLI, it will get to a given page and then silently fail with no warnings, I don't really know why. If that happens,
 usually restarting is enough to get it working. If you can tell why, feel free to submit a PR.
 
-To run:
+#### To run:
 - `git clone`
 - `cargo build --release`
 - `cd` into `reads-good/target/release/` and run `./reads-good` or double click executable
