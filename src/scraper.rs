@@ -2,6 +2,7 @@ use futures::future;
 use reqwest;
 use scraper;
 use scraper::{Html, Selector};
+use tokio::time::{sleep, Duration};
 
 const GOODREADS_BASE_URL: &str = "https://www.goodreads.com";
 
@@ -23,7 +24,7 @@ pub struct Book {
     pub genres: Vec<String>,
 }
 
-pub async fn scrape(
+pub async fn run(
     client: &reqwest::Client,
     url: String,
     page_count: u32,
@@ -46,14 +47,18 @@ pub async fn scrape(
                 let book_urls = get_book_urls_from_list(html);
 
                 // get each individual book's html for processing
-                let retrieve_books_html_futures =
-                    book_urls.into_iter().map(|url| get_book_html(client, url));
+                let retrieve_books_html_futures = book_urls.into_iter().map(|url| async {
+                    // poor mans concurrency: sleep 200ms between requests to retrieve
+                    // an individual book's html
+                    sleep(Duration::from_millis(200)).await;
+                    get_book_html(client, url).await
+                });
 
                 let each_books_html: Result<Vec<Html>, Error> =
                     future::join_all(retrieve_books_html_futures)
                         .await
                         .into_iter()
-                        .collect();
+                        .collect::<Result<Vec<Html>, Error>>();
 
                 let parsed_books: Result<Vec<Book>, Error> = each_books_html.map(|book_html_vec| {
                     book_html_vec
@@ -75,7 +80,11 @@ pub async fn scrape(
 }
 
 async fn get_html_from_url(client: &reqwest::Client, url: &str) -> Result<Html, reqwest::Error> {
-    let response = client.get(url).send().await?;
+    let response = client
+        .get(url)
+        .header("User-Agent", "Mozilla/5.0 (compatible; reads-good/1.0)")
+        .send()
+        .await?;
 
     let html_as_string = response.text().await.unwrap_or_else(|_| String::from(""));
     let document = Html::parse_document(&html_as_string);

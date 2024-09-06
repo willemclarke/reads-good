@@ -26,14 +26,17 @@ async fn main() -> Result<(), ReadsGoodError> {
         .with_validator(validate_filename)
         .prompt();
 
-    let page_count =
-        inquire::prompt_u32("How many pages would you like to export? (Number between 1 - 10): ");
+    let page_count = inquire::CustomType::new(
+        "How many pages would you like to export? (Number between 1 - 10):",
+    )
+    .with_validator(validate_page_number)
+    .prompt();
 
     match listopia_url {
         Ok(url) => match page_count {
             Ok(count) => match file_name {
                 Ok(name) => {
-                    _ = scraper::scrape(&client, url, count)
+                    _ = scraper::run(&client, url, count)
                         .await
                         .and_then(|books| Ok(csv::create(books, name)));
                     Ok(())
@@ -86,5 +89,17 @@ fn validate_filename(
         ))
     } else {
         Ok(Validation::Valid)
+    }
+}
+
+fn validate_page_number(
+    page_number: &u32,
+) -> Result<Validation, Box<dyn std::error::Error + Send + Sync>> {
+    if *page_number > 1 && *page_number <= 10 {
+        Ok(Validation::Valid)
+    } else {
+        Ok(Validation::Invalid(
+            "Select a number between 1 and 10".into(),
+        ))
     }
 }
