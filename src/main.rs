@@ -15,49 +15,35 @@ enum ReadsGoodError {
 async fn main() -> Result<(), ReadsGoodError> {
     // init reqwest client which we will ping goodreads with
     let client = reqwest::Client::new();
+    let (url, name, count) = gather_input()?;
 
-    // user prompts
+    let _ = scraper::run(&client, url, count)
+        .await
+        .and_then(|books| Ok(csv::create(books, name)));
+
+    Ok(())
+}
+
+fn gather_input() -> Result<(String, String, u32), ReadsGoodError> {
     let listopia_url = inquire::Text::new("Provide the listopia url you would like to export:")
         .with_help_message("Please ensure the url you provide begins on the first page")
         .with_validator(validate_listopia_url)
-        .prompt();
+        .prompt()
+        .map_err(|err| ReadsGoodError::Inquire(err))?;
 
     let file_name = inquire::Text::new("Provide the name of your csv file: e.g. `books.csv`:")
         .with_validator(validate_filename)
-        .prompt();
+        .prompt()
+        .map_err(|err| ReadsGoodError::Inquire(err))?;
 
-    let page_count = inquire::CustomType::new(
+    let page_count = inquire::CustomType::<u32>::new(
         "How many pages would you like to export? (Number between 1 - 10):",
     )
     .with_validator(validate_page_number)
-    .prompt();
+    .prompt()
+    .map_err(|err| ReadsGoodError::Inquire(err))?;
 
-    match listopia_url {
-        Ok(url) => match page_count {
-            Ok(count) => match file_name {
-                Ok(name) => {
-                    _ = scraper::run(&client, url, count)
-                        .await
-                        .and_then(|books| Ok(csv::create(books, name)));
-                    Ok(())
-                }
-
-                Err(err) => {
-                    println!("Please provide a valid number between 1 - 10");
-                    Err(ReadsGoodError::Inquire(err))
-                }
-            },
-            Err(err) => {
-                println!("Error parsing provided listopia url");
-                Err(ReadsGoodError::Inquire(err))
-            }
-        },
-
-        Err(err) => {
-            println!("Error parsing provided listopia url");
-            Err(ReadsGoodError::Inquire(err))
-        }
-    }
+    Ok((listopia_url, file_name, page_count))
 }
 
 fn validate_listopia_url(
