@@ -5,6 +5,8 @@ use scraper::{Html, Selector};
 use tokio::time::{sleep, Duration};
 
 const GOODREADS_BASE_URL: &str = "https://www.goodreads.com";
+const MAX_PAGES: u32 = 100;
+const PAGE_DELAY_MS: u64 = 3000;
 
 #[derive(Debug)]
 pub enum Error {
@@ -24,20 +26,18 @@ pub struct Book {
     pub genres: Vec<String>,
 }
 
-pub async fn run(
-    client: &reqwest::Client,
-    url: String,
-    page_count: u32,
-) -> Result<Vec<Book>, Error> {
+pub async fn run(client: &reqwest::Client, url: String) -> Result<Vec<Book>, Error> {
     let mut all_books = Vec::new();
+    let mut current_page = 1;
 
-    for page in 1..=page_count {
-        // append the current page as a query param
-        let paginated_url = format!("{}?page={}", url, page);
-        println!(
-            "Scraping page {} of {}, url: {}",
-            page, page_count, paginated_url
-        );
+    loop {
+        let paginated_url = format!("{}?page={}", url, current_page);
+        println!("Scraping page {}, url: {}", current_page, paginated_url);
+
+        // Add delay between pages except for the first page
+        if current_page > 1 {
+            sleep(Duration::from_millis(PAGE_DELAY_MS)).await;
+        }
 
         // fetch the listopia list, from which we get each of the individual book urls
         let listopia_html = get_list_html(client, paginated_url).await;
@@ -46,11 +46,16 @@ pub async fn run(
             Ok(html) => {
                 let book_urls = get_book_urls_from_list(html);
 
-                // get each individual book's html for processing
+                // If no books found on this page, we've reached the end
+                if book_urls.is_empty() {
+                    println!("No books found on page {}, stopping scrape", current_page);
+                    break;
+                }
+
                 let retrieve_books_html_futures = book_urls.into_iter().map(|url| async {
-                    // poor mans concurrency: sleep 200ms between requests to retrieve
+                    // poor mans concurrency: sleep 500ms between requests to retrieve
                     // an individual book's html
-                    sleep(Duration::from_millis(200)).await;
+                    sleep(Duration::from_millis(500)).await;
                     get_book_html(client, url).await
                 });
 
@@ -63,7 +68,7 @@ pub async fn run(
                 let parsed_books: Result<Vec<Book>, Error> = each_books_html.map(|book_html_vec| {
                     book_html_vec
                         .iter()
-                        .filter_map(|html| parse_book(&html))
+                        .filter_map(|html| parse_book(html))
                         .collect()
                 });
 
@@ -73,6 +78,12 @@ pub async fn run(
                 }
             }
             Err(err) => return Err(err),
+        }
+
+        current_page += 1;
+        if current_page > MAX_PAGES {
+            println!("Reached maximum page limit of {}", MAX_PAGES);
+            break;
         }
     }
 
@@ -211,7 +222,7 @@ fn parse_book(book_html: &Html) -> Option<Book> {
     {
         None
     } else {
-        println!("Parsing book: {:?}, by: {:?}", title, author,);
+        println!("Parsing book: {:?}, by: {:?}", title, author);
 
         Some(Book {
             title,

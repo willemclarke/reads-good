@@ -13,18 +13,17 @@ enum ReadsGoodError {
 
 #[tokio::main]
 async fn main() -> Result<(), ReadsGoodError> {
-    // init reqwest client which we will ping goodreads with
     let client = reqwest::Client::new();
-    let (url, name, count) = gather_input()?;
+    let (url, name) = gather_input()?;
 
-    let _ = scraper::run(&client, url, count)
+    let _ = scraper::run(&client, url)
         .await
         .and_then(|books| Ok(csv::create(books, name)));
 
     Ok(())
 }
 
-fn gather_input() -> Result<(String, String, u32), ReadsGoodError> {
+fn gather_input() -> Result<(String, String), ReadsGoodError> {
     let listopia_url = inquire::Text::new("Provide the listopia url you would like to export:")
         .with_help_message("Please ensure the url you provide begins on the first page")
         .with_validator(validate_listopia_url)
@@ -36,14 +35,7 @@ fn gather_input() -> Result<(String, String, u32), ReadsGoodError> {
         .prompt()
         .map_err(|err| ReadsGoodError::Inquire(err))?;
 
-    let page_count = inquire::CustomType::<u32>::new(
-        "How many pages would you like to export? (Number between 1 - 10):",
-    )
-    .with_validator(validate_page_number)
-    .prompt()
-    .map_err(|err| ReadsGoodError::Inquire(err))?;
-
-    Ok((listopia_url, file_name, page_count))
+    Ok((listopia_url, file_name))
 }
 
 fn validate_listopia_url(
@@ -78,14 +70,3 @@ fn validate_filename(
     }
 }
 
-fn validate_page_number(
-    page_number: &u32,
-) -> Result<Validation, Box<dyn std::error::Error + Send + Sync>> {
-    if *page_number > 1 && *page_number <= 10 {
-        Ok(Validation::Valid)
-    } else {
-        Ok(Validation::Invalid(
-            "Select a number between 1 and 10".into(),
-        ))
-    }
-}
