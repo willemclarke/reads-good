@@ -21,7 +21,7 @@ pub struct Book {
 #### Behaviour:
 - Input the url to the listopia list
 - Input a desired filename, e.g. `books.csv`
-- Input desired number of pages you would like to export (number between 1 - 10)
+- Input desired number of pages you would like to export (number between 1 - 100) (The biggest listopia list I could find had 100 pages)
 
 ![image](https://github.com/user-attachments/assets/048c2faf-e134-431a-8f36-583a53381d47)
 
